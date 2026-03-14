@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mueblería San José | Muebles de Calidad para tu Hogar{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero">
+    <div class="hero-content">
+        <div class="hero-text">
+            <div class="hero-badge">
+                 Calidad & Diseño
+            </div>
+            <h1>
+                Muebles que transforman tu
+                <span class="highlight">hogar</span>
+            </h1>
+            <p class="hero-description">
+                Descubre nuestra colección exclusiva de muebles artesanales. Cada pieza está diseñada con pasión para crear espacios únicos y acogedores.
+            </p>
+            <div class="hero-buttons">
+                <a href="{% url 'catalogo' %}" class="btn btn-primary btn-lg">
+                    Ver Catálogo
+                </a>
+                {% if not request.session.usuario_id %}
+                <a href="{% url 'registro' %}" class="btn btn-outline btn-lg">
+                    Crear Cuenta
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="hero-visual">
+            <div class="hero-card">
+                <span class="hero-card-icon">🛋️</span>
+                <h3>Colección 2026</h3>
+                <p>Nuevos diseños que combinan elegancia moderna con la calidez de los materiales naturales.</p>
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <span class="stat-number">500+</span>
+                        <span class="stat-label">Productos</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">15+</span>
+                        <span class="stat-label">Años</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">1K+</span>
+                        <span class="stat-label">Clientes</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Categories Section -->
+{% if categorias %}
+<section class="section">
+    <div class="container">
+        <div class="section-header">
+            <h2>Nuestras Categorías</h2>
+            <div class="section-line"></div>
+            <p>Explora nuestra amplia variedad de muebles organizados por categoría</p>
+        </div>
+        <div class="categories-grid">
+            {% for cat in categorias %}
+            <a href="{% url 'catalogo' %}?categoria={{ cat.id_categoria }}" class="category-card">
+                <span class="category-icon">
+                    {% if 'sala' in cat.nombre_categoria|lower %}🛋️
+                    {% elif 'comedor' in cat.nombre_categoria|lower %}🪑
+                    {% elif 'dormitorio' in cat.nombre_categoria|lower or 'cama' in cat.nombre_categoria|lower %}🛏️
+                    {% elif 'cocina' in cat.nombre_categoria|lower %}🍳
+                    {% elif 'oficina' in cat.nombre_categoria|lower %}💼
+                    {% elif 'baño' in cat.nombre_categoria|lower %}🚿
+                    {% else %}🪵
+                    {% endif %}
+                </span>
+                <h3>{{ cat.nombre_categoria }}</h3>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Featured Products -->
+{% if muebles_destacados %}
+<section class="section" style="background: var(--white);">
+    <div class="container">
+        <div class="section-header">
+            <h2>Productos Destacados</h2>
+            <div class="section-line"></div>
+            <p>Los muebles más populares seleccionados para ti</p>
+        </div>
+        <div class="products-grid">
+            {% for mueble in muebles_destacados %}
+            <a href="{% url 'detalle_mueble' mueble.id_muebles %}" class="product-card">
+                <div class="product-image">
+                    {% if mueble.imagen %}
+                        <img src="{{ mueble.imagen.url }}" alt="{{ mueble.nombre }}">
+                    {% else %}
+                        <img src="{% static 'img/logo.jpg' %}" alt="Logo" style="width: 100%; height: 100%; object-fit: contain; padding: 1rem; opacity: 0.5;">
+                    {% endif %}
+                    {% if mueble.stock <= 5 and mueble.stock > 0 %}
+                        <span class="product-badge">¡Últimas unidades!</span>
+                    {% endif %}
+                </div>
+                <div class="product-info">
+                    <span class="product-category">{{ mueble.id_categoria.nombre_categoria }}</span>
+                    <h3 class="product-name">{{ mueble.nombre }}</h3>
+                    <p class="product-description">{{ mueble.descripcion|default:"Mueble de alta calidad" }}</p>
+                    <div class="product-footer">
+                        <span class="product-price">
+                            <span class="currency">L. </span>{{ mueble.precio }}
+                        </span>
+                        <span class="btn-add-cart">→</span>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        <div style="text-align: center; margin-top: var(--space-2xl);">
+            <a href="{% url 'catalogo' %}" class="btn btn-secondary btn-lg">Ver todo el catálogo</a>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- About Section -->
+<section class="section about-section">
+    <div class="container">
+        <div class="about-grid">
+            <div class="about-text">
+                <h2>Sobre Mueblería San José</h2>
+                <p>Con más de 15 años de experiencia, nos dedicamos a crear muebles que combinan artesanía tradicional con diseño contemporáneo. Cada pieza es una obra de arte funcional para tu hogar.</p>
+                <p>Utilizamos los mejores materiales y técnicas de fabricación para garantizar que cada mueble sea duradero, cómodo y hermoso.</p>
+            </div>
+            <div class="about-features">
+                <div class="feature-item">
+                    <div>
+                        <h4>Calidad Premium</h4>
+                        <p>Materiales seleccionados y acabados de primera para muebles que duran generaciones.</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div>
+                        <h4>Entrega a Domicilio</h4>
+                        <p>Llevamos tus muebles hasta la puerta de tu hogar con cuidado y puntualidad.</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div>
+                        <h4>Garantía Total</h4>
+                        <p>Todos nuestros productos cuentan con garantía de calidad y satisfacción.</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div>
+                        <h4>Diseño Personalizado</h4>
+                        <p>Creamos muebles a la medida de tus necesidades y estilo personal.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

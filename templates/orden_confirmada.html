@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Orden Confirmada #{{ venta.id_venta }} | Mueblería San José{% endblock %}
+
+{% block content %}
+<div class="catalog-page">
+    <div class="container" style="padding: 3rem 0; max-width: 700px;">
+        <div class="order-success-card">
+            <h1>¡Compra Exitosa!</h1>
+            <p class="success-subtitle">Tu orden ha sido procesada correctamente</p>
+
+            <div class="order-details">
+                <div class="order-detail-row">
+                    <span>N° de Orden:</span>
+                    <strong>#{{ venta.id_venta }}</strong>
+                </div>
+                <div class="order-detail-row">
+                    <span>Fecha:</span>
+                    <strong>{{ venta.fecha|date:"d/m/Y H:i" }}</strong>
+                </div>
+                <div class="order-detail-row">
+                    <span>Total:</span>
+                    <strong style="font-size: 1.3rem; color: var(--brown-700);">L. {{ venta.total }}</strong>
+                </div>
+            </div>
+
+            <h3 style="margin: 2rem 0 1rem; font-family: var(--font-heading);">Detalle de Productos</h3>
+            <div class="order-items">
+                {% for detalle in detalles %}
+                <div class="order-item">
+                    <div>
+                        <strong>{{ detalle.id_muebles.nombre }}</strong>
+                        <span style="color: var(--brown-400); font-size: 0.85rem;"> × {{ detalle.cantidad }}</span>
+                    </div>
+                    <span>L. {{ detalle.precio_unitario }}</span>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div style="display: flex; gap: 1rem; margin-top: 2rem; flex-wrap: wrap;">
+                <a href="{% url 'catalogo' %}" class="btn btn-primary btn-lg" style="flex: 1;">
+                    Seguir Comprando
+                </a>
+                <a href="{% url 'home' %}" class="btn btn-secondary btn-lg" style="flex: 1;">
+                    Ir al Inicio
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

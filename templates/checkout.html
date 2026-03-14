@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Confirmar Compra | Mueblería San José{% endblock %}
+
+{% block content %}
+<div class="catalog-page">
+    <div class="catalog-header">
+        <div class="container">
+            <h1>Confirmar Compra</h1>
+            <p>Revisa tu pedido antes de confirmar</p>
+        </div>
+    </div>
+
+    <div class="container" style="padding-bottom: 4rem;">
+        <div class="cart-layout">
+            <!-- Order Items -->
+            <div class="cart-items">
+                <h3 style="margin-bottom: 1.5rem; font-family: var(--font-heading); color: var(--brown-700);">
+                    Productos en tu orden
+                </h3>
+                {% for item in items %}
+                <div class="cart-item">
+                    <div class="cart-item-image">
+                        {% if item.imagen %}
+                            <img src="{{ item.imagen }}" alt="{{ item.nombre }}">
+                        {% else %}
+                            <span class="placeholder-icon">🪑</span>
+                        {% endif %}
+                    </div>
+                    <div class="cart-item-info">
+                        <h3>{{ item.nombre }}</h3>
+                        <p style="color: var(--brown-400); font-size: 0.85rem;">Cantidad: {{ item.cantidad }}</p>
+                    </div>
+                    <div class="cart-item-subtotal">
+                        <span class="currency">L. </span>{{ item.subtotal }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Payment Summary -->
+            <div class="cart-summary">
+                <div class="summary-card">
+                    <h3>Resumen de Pago</h3>
+
+                    <div class="summary-line">
+                        <span>Comprador:</span>
+                        <span><strong>{{ request.session.usuario_nombre }}</strong></span>
+                    </div>
+                    <div class="summary-divider"></div>
+
+                    {% for item in items %}
+                    <div class="summary-line" style="font-size: 0.85rem;">
+                        <span>{{ item.nombre }} (×{{ item.cantidad }})</span>
+                        <span>L. {{ item.subtotal }}</span>
+                    </div>
+                    {% endfor %}
+
+                    <div class="summary-divider"></div>
+                    <div class="summary-line">
+                        <span>Envío</span>
+                        <span style="color: var(--success);">Gratis</span>
+                    </div>
+                    <div class="summary-divider"></div>
+                    <div class="summary-line summary-total">
+                        <span>Total a Pagar</span>
+                        <span><span class="currency">L. </span>{{ total }}</span>
+                    </div>
+
+                    <form method="post" action="{% url 'checkout' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: 1.5rem;">
+                             Confirmar Compra
+                        </button>
+                    </form>
+
+                    <a href="{% url 'ver_carrito' %}" class="btn btn-outline" style="width: 100%; margin-top: 0.75rem; color: var(--brown-600); border-color: var(--brown-300);">
+                        Volver al carrito
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

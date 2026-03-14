@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Catálogo | Mueblería San José{% endblock %}
+
+{% block content %}
+<div class="catalog-page">
+    <!-- Catalog Header -->
+    <div class="catalog-header">
+        <div class="container">
+            <h1>Nuestro Catálogo</h1>
+            <p>
+                {% if categoria_actual %}
+                    Mostrando: {{ categoria_actual.nombre_categoria }}
+                {% else %}
+                    Explora toda nuestra colección de muebles de calidad
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="catalog-content">
+            <!-- Sidebar -->
+            <aside class="catalog-sidebar">
+                <div class="filter-card">
+                    <h3>Categorías</h3>
+                    <div class="filter-list">
+                        <a href="{% url 'catalogo' %}" class="filter-item {% if not categoria_actual %}active{% endif %}">
+                            Todas las categorías
+                        </a>
+                        {% for cat in categorias %}
+                        <a href="{% url 'catalogo' %}?categoria={{ cat.id_categoria }}"
+                           class="filter-item {% if categoria_actual and categoria_actual.id_categoria == cat.id_categoria %}active{% endif %}">
+                            {{ cat.nombre_categoria }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Products -->
+            <div>
+                <p class="catalog-count">
+                    Se encontraron <strong>{{ muebles|length }}</strong> mueble{{ muebles|length|pluralize:"s" }}
+                </p>
+
+                {% if muebles %}
+                <div class="products-grid">
+                    {% for mueble in muebles %}
+                    <div class="product-card">
+                        <a href="{% url 'detalle_mueble' mueble.id_muebles %}">
+                            <div class="product-image">
+                                {% if mueble.imagen %}
+                                    <img src="{{ mueble.imagen.url }}" alt="{{ mueble.nombre }}">
+                                {% else %}
+                                    <img src="{% static 'img/logo.jpg' %}" alt="Logo" style="width: 100%; height: 100%; object-fit: contain; padding: 1rem; opacity: 0.5;">
+                                {% endif %}
+                                {% if mueble.stock <= 5 and mueble.stock > 0 %}
+                                    <span class="product-badge">¡Últimas!</span>
+                                {% elif mueble.stock == 0 %}
+                                    <span class="product-badge" style="background: var(--error); color: white;">Agotado</span>
+                                {% endif %}
+                            </div>
+                            <div class="product-info">
+                                <span class="product-category">{{ mueble.id_categoria.nombre_categoria }}</span>
+                                <h3 class="product-name">{{ mueble.nombre }}</h3>
+                                <p class="product-description">{{ mueble.descripcion|default:"Mueble de alta calidad para tu hogar" }}</p>
+                            </div>
+                        </a>
+                        <div class="product-footer" style="padding: 0 1.5rem 1.5rem;">
+                            <span class="product-price">
+                                <span class="currency">L. </span>{{ mueble.precio }}
+                            </span>
+                            {% if mueble.stock > 0 %}
+                            <a href="{% url 'agregar_al_carrito' mueble.id_muebles %}?next=/catalogo/{% if categoria_actual %}?categoria={{ categoria_actual.id_categoria }}{% endif %}" class="btn-add-cart" title="Agregar al carrito">🛒</a>
+                            {% else %}
+                            <span class="btn-add-cart" style="opacity: 0.3; cursor: not-allowed;">🛒</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <h3>No se encontraron muebles</h3>
+                    <p>No hay muebles disponibles en esta categoría por el momento.</p>
+                    <a href="{% url 'catalogo' %}" class="btn btn-secondary" style="margin-top: var(--space-lg);">Ver todas las categorías</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

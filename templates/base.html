@@ -1,0 +1,134 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Mueblería San José - Los mejores muebles para tu hogar con calidad y estilo.">
+    <title>{% block title %}Mueblería San José{% endblock %}</title>
+    <link rel="icon" type="image/jpeg" href="{% static 'img/logo.jpg' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar" id="navbar">
+        <div class="navbar-content">
+            <a href="{% url 'home' %}" class="navbar-brand">
+                <img src="{% static 'img/logo.jpg' %}" alt="Logo" style="height: 40px; margin-right: 10px; border-radius: 50%;">
+                <div>
+                    <span class="brand-text">San José</span>
+                    <span class="brand-sub">Mueblería</span>
+                </div>
+            </a>
+
+            <div class="nav-links" id="navLinks">
+                <a href="{% url 'home' %}" class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}">Inicio</a>
+                <a href="{% url 'catalogo' %}" class="nav-link {% if request.resolver_match.url_name == 'catalogo' %}active{% endif %}">Catálogo</a>
+                <a href="{% url 'ver_carrito' %}" class="nav-link nav-cart {% if request.resolver_match.url_name == 'ver_carrito' %}active{% endif %}">
+                    🛒
+                    {% if cart_count > 0 %}<span class="cart-badge">{{ cart_count }}</span>{% endif %}
+                </a>
+
+                <div class="nav-auth">
+                    {% if request.session.usuario_id %}
+                        <div class="user-menu">
+                            <span class="user-greeting">Hola, <strong>{{ request.session.usuario_nombre }}</strong></span>
+                            <a href="{% url 'logout' %}" class="btn btn-outline">Cerrar Sesión</a>
+                        </div>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="btn btn-outline">Iniciar Sesión</a>
+                        <a href="{% url 'registro' %}" class="btn btn-primary">Registrarse</a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <button class="mobile-toggle" id="mobileToggle" onclick="toggleMenu()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Messages -->
+    {% if messages %}
+    <div class="messages-container">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}" id="alert-{{ forloop.counter }}">
+            {% if message.tags == 'success' %}✅{% elif message.tags == 'error' %}❌{% else %}⚠️{% endif %}
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <span class="brand-text"> Mueblería San José</span>
+                    <p>Transformamos espacios con muebles de calidad que combinan diseño, confort y durabilidad para tu hogar.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Navegación</h4>
+                    <a href="{% url 'home' %}">Inicio</a>
+                    <a href="{% url 'catalogo' %}">Catálogo</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Mi Cuenta</h4>
+                    {% if request.session.usuario_id %}
+                        <a href="{% url 'logout' %}">Cerrar Sesión</a>
+                    {% else %}
+                        <a href="{% url 'login' %}">Iniciar Sesión</a>
+                        <a href="{% url 'registro' %}">Registrarse</a>
+                    {% endif %}
+                </div>
+                <div class="footer-col">
+                    <h4>Contacto</h4>
+                    <a href="#">📍 San José, Tegucigalpa, salida al sur Km1</a>
+                    <a href="#">📞 +504 3239-2828</a>
+                    <a href="#">✉️ muebleriasanjose@gmail.com</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Mueblería San José. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // Mobile menu toggle
+        function toggleMenu() {
+            document.getElementById('navLinks').classList.toggle('open');
+        }
+
+        // Auto dismiss alerts
+        setTimeout(() => {
+            document.querySelectorAll('.alert').forEach(alert => {
+                alert.style.opacity = '0';
+                alert.style.transform = 'translateX(50px)';
+                setTimeout(() => alert.remove(), 300);
+            });
+        }, 4000);
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

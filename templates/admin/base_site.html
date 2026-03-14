@@ -1,0 +1,90 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}{{ title }} | Administración Mueblería San José{% endblock %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <link rel="icon" type="image/jpeg" href="{% static 'img/logo.jpg' %}">
+    <style>
+        /* Customize Admin Header */
+        #header {
+            background-color: var(--brown-800, #3E2723);
+            color: #fff;
+            align-items: center;
+        }
+        #header a:link, #header a:visited {
+            color: #fff;
+        }
+        #branding h1 {
+            margin: 0;
+            padding: 0;
+        }
+        #site-name a {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        #site-name img {
+            height: 45px;
+            width: 45px;
+            border-radius: 50%;
+            object-fit: contain;
+            background-color: #fff;
+            padding: 2px;
+        }
+        /* Admin breadcrumbs */
+        div.breadcrumbs {
+            background: var(--brown-700, #4E342E);
+        }
+        /* Primary buttons */
+        .button, .button:focus, input[type=submit], input[type=submit]:focus, input[type=button], input[type=button]:focus, .submit-row input, .submit-row input:focus {
+            background: #5D4037;
+        }
+        .button:hover, input[type=submit]:hover, input[type=button]:hover, .submit-row input:hover {
+            background: #3E2723;
+        }
+        /* Login screen */
+        body.login {
+            background: #f4f0ec;
+        }
+        .login #header {
+            background: #3E2723;
+            color: #fff;
+        }
+        /* Module headers */
+        #content-main div.module h2, 
+        #content-main .module caption, 
+        #content-main .inline-group h2,
+        div.module h2 {
+            background: #4E342E;
+            color: #ffffff !important;
+        }
+        #content-main div.module h2 a, 
+        #content-main .module caption a, 
+        #content-main .inline-group h2 a,
+        div.module h2 a {
+            color: #ffffff !important;
+        }
+        /* Links */
+        #content a:link, #content a:visited {
+            color: #5D4037;
+        }
+        #content a:hover, #content a:focus, #content a:active {
+            color: #3E2723;
+        }
+        /* Selected rows */
+        tr.selected {
+            background-color: #efebe9;
+        }
+    </style>
+{% endblock %}
+
+{% block branding %}
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}">
+        <img src="{% static 'img/logo.jpg' %}" alt="Logo San José">
+        Administración de Mueblería San José
+    </a>
+</h1>
+{% endblock %}
