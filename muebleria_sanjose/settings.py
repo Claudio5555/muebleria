@@ -69,17 +69,15 @@ TEMPLATES = [
 WSGI_APPLICATION = 'muebleria_sanjose.wsgi.application'
 
 
-# Database - MSSQL
+# Database - PostgreeSQL
 DATABASES = {
     'default': {
-        'ENGINE': 'mssql',
-        'NAME': os.environ.get('DB_NAME', 'muebleria'),
-        'HOST': os.environ.get('DB_HOST', 'DESKTOP-L69CEH2'),
-        'USER': os.environ.get('DB_USER', 'sa'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', '1234'),
-        'OPTIONS': {
-            'driver': 'ODBC Driver 17 for SQL Server',
-        },
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'muebleria',
+        'USER': 'sa',
+        'PASSWORD': '1234',
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
 
