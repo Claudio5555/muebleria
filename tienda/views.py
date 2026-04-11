@@ -1,7 +1,10 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password, check_password
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseNotAllowed
+from django.views.decorators.http import require_POST, require_http_methods
+from django.db import transaction
+from django.utils.http import url_has_allowed_host_and_scheme
 from decimal import Decimal
 from .models import Muebles, Categorias, Usuarios, Clientes, Ventas, DetallesVentas
 from .forms import RegistroForm, LoginForm
@@ -24,6 +27,12 @@ def catalogo(request):
     categoria_id = request.GET.get('categoria')
 
     if categoria_id:
+        # Validar que categoria_id sea un entero válido
+        try:
+            categoria_id = int(categoria_id)
+        except (ValueError, TypeError):
+            messages.warning(request, 'Categoría inválida.')
+            return redirect('catalogo')
         muebles = Muebles.objects.filter(id_categoria_id=categoria_id, stock__gt=0)
         categoria_actual = Categorias.objects.filter(id_categoria=categoria_id).first()
     else:
@@ -136,8 +145,9 @@ def _cart_count(request):
     return sum(item['cantidad'] for item in cart.values())
 
 
+@require_POST
 def agregar_al_carrito(request, mueble_id):
-    """Agregar un mueble al carrito"""
+    """Agregar un mueble al carrito (solo POST)"""
     try:
         mueble = Muebles.objects.get(id_muebles=mueble_id)
     except Muebles.DoesNotExist:
@@ -166,8 +176,10 @@ def agregar_al_carrito(request, mueble_id):
         _save_cart(request, cart)
         messages.success(request, f'"{mueble.nombre}" agregado al carrito.')
 
-    # Volver a la página anterior
-    next_url = request.GET.get('next', request.META.get('HTTP_REFERER', '/catalogo/'))
+    # Volver a la página anterior — validar que sea URL interna (prevenir Open Redirect)
+    next_url = request.POST.get('next', request.META.get('HTTP_REFERER', '/catalogo/'))
+    if not url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
+        next_url = '/catalogo/'
     return redirect(next_url)
 
 
@@ -201,8 +213,9 @@ def actualizar_carrito(request, mueble_id):
     return redirect('ver_carrito')
 
 
+@require_POST
 def eliminar_del_carrito(request, mueble_id):
-    """Eliminar un item del carrito"""
+    """Eliminar un item del carrito (solo POST)"""
     cart = _get_cart(request)
     key = str(mueble_id)
 
@@ -271,40 +284,46 @@ def checkout(request):
                 }
             )
 
-            # Verificar stock antes de procesar
-            total = Decimal('0.00')
-            items_to_process = []
-            for key, item in cart.items():
-                mueble = Muebles.objects.get(id_muebles=item['mueble_id'])
-                if item['cantidad'] > mueble.stock:
-                    messages.error(
-                        request,
-                        f'No hay suficiente stock de "{mueble.nombre}". '
-                        f'Stock disponible: {mueble.stock}.'
+            # Usar transacción atómica y select_for_update para evitar condiciones de carrera
+            with transaction.atomic():
+                # Verificar stock y re-verificar precios desde la BD
+                total = Decimal('0.00')
+                items_to_process = []
+                for key, item in cart.items():
+                    # select_for_update bloquea la fila hasta que termine la transacción
+                    mueble = Muebles.objects.select_for_update().get(
+                        id_muebles=item['mueble_id']
                     )
-                    return redirect('ver_carrito')
-                subtotal = mueble.precio * item['cantidad']
-                total += subtotal
-                items_to_process.append((mueble, item['cantidad'], mueble.precio))
+                    if item['cantidad'] > mueble.stock:
+                        messages.error(
+                            request,
+                            f'No hay suficiente stock de "{mueble.nombre}". '
+                            f'Stock disponible: {mueble.stock}.'
+                        )
+                        return redirect('ver_carrito')
+                    # Re-verificar precio real de la BD (no confiar en el precio de la sesión)
+                    subtotal = mueble.precio * item['cantidad']
+                    total += subtotal
+                    items_to_process.append((mueble, item['cantidad'], mueble.precio))
 
-            # Crear la venta
-            venta = Ventas.objects.create(
-                id_cliente=cliente,
-                id_usuario=usuario,
-                total=total,
-            )
-
-            # Crear detalles y actualizar stock
-            for mueble, cantidad, precio in items_to_process:
-                DetallesVentas.objects.create(
-                    id_ventas=venta,
-                    id_muebles=mueble,
-                    cantidad=cantidad,
-                    precio_unitario=precio,
+                # Crear la venta
+                venta = Ventas.objects.create(
+                    id_cliente=cliente,
+                    id_usuario=usuario,
+                    total=total,
                 )
-                # Descontar stock
-                mueble.stock -= cantidad
-                mueble.save()
+
+                # Crear detalles y actualizar stock
+                for mueble, cantidad, precio in items_to_process:
+                    DetallesVentas.objects.create(
+                        id_ventas=venta,
+                        id_muebles=mueble,
+                        cantidad=cantidad,
+                        precio_unitario=precio,
+                    )
+                    # Descontar stock
+                    mueble.stock -= cantidad
+                    mueble.save()
 
             # Limpiar carrito
             request.session['carrito'] = {}
@@ -312,7 +331,7 @@ def checkout(request):
 
             messages.success(
                 request,
-                f'¡Compra realizada exitosamente! Orden #{venta.id_venta} — Total: Q{total}'
+                f'¡Compra realizada exitosamente! Orden #{venta.id_venta} — Total: L.{total}'
             )
             return redirect('orden_confirmada', venta_id=venta.id_venta)
 
@@ -347,9 +366,19 @@ def checkout(request):
 
 
 def orden_confirmada(request, venta_id):
-    """Página de confirmación de orden"""
+    """Página de confirmación de orden — protegida por usuario"""
+    # Verificar que el usuario esté logueado
+    usuario_id = request.session.get('usuario_id')
+    if not usuario_id:
+        messages.warning(request, 'Debes iniciar sesión para ver tus órdenes.')
+        return redirect('login')
+
     try:
         venta = Ventas.objects.get(id_venta=venta_id)
+        # Verificar que la orden pertenezca al usuario logueado
+        if venta.id_usuario_id != usuario_id:
+            messages.error(request, 'No tienes permiso para ver esta orden.')
+            return redirect('home')
         detalles = DetallesVentas.objects.filter(id_ventas=venta)
     except Ventas.DoesNotExist:
         messages.error(request, 'Orden no encontrada.')

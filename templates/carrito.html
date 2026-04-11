@@ -41,7 +41,10 @@
                     <div class="cart-item-subtotal">
                         <span class="currency">L. </span>{{ item.subtotal }}
                     </div>
-                    <a href="{% url 'eliminar_del_carrito' item.mueble_id %}" class="cart-item-remove" title="Eliminar">✕</a>
+                    <form method="post" action="{% url 'eliminar_del_carrito' item.mueble_id %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="cart-item-remove" title="Eliminar">✕</button>
+                    </form>
                 </div>
                 {% endfor %}
             </div>

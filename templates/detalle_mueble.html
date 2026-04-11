@@ -44,9 +44,13 @@
 
                 <div class="detail-actions" style="display: flex; gap: 1rem; align-items: center;">
                     {% if mueble.stock > 0 %}
-                    <a href="{% url 'agregar_al_carrito' mueble.id_muebles %}" class="btn btn-primary btn-lg" style="flex: 1;">
-                         Agregar al carrito
-                    </a>
+                    <form method="post" action="{% url 'agregar_al_carrito' mueble.id_muebles %}" style="flex: 1;">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="/mueble/{{ mueble.id_muebles }}/">
+                        <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">
+                             Agregar al carrito
+                        </button>
+                    </form>
                     {% else %}
                     <button class="btn btn-primary btn-lg" style="flex: 1; opacity: 0.5; cursor: not-allowed;" disabled>
                         Agotado
@@ -90,7 +94,11 @@
                                 <span class="currency">L. </span>{{ rel.precio }}
                             </span>
                             {% if rel.stock > 0 %}
-                            <a href="{% url 'agregar_al_carrito' rel.id_muebles %}?next=/mueble/{{ mueble.id_muebles }}/" class="btn-add-cart" title="Agregar al carrito">🛒</a>
+                            <form method="post" action="{% url 'agregar_al_carrito' rel.id_muebles %}" style="display:inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="/mueble/{{ mueble.id_muebles }}/">
+                                <button type="submit" class="btn-add-cart" title="Agregar al carrito">🛒</button>
+                            </form>
                             {% else %}
                             <span class="btn-add-cart" style="opacity: 0.3; cursor: not-allowed;">🛒</span>
                             {% endif %}

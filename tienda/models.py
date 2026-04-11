@@ -1,9 +1,19 @@
 from django.db import models
+from django.core.validators import MinValueValidator, RegexValidator, EmailValidator
+
+
+# Validador reutilizable para teléfonos
+phone_validator = RegexValidator(
+    regex=r'^[0-9+\-\s()]+$',
+    message='El teléfono solo puede contener números, +, -, espacios y paréntesis.'
+)
 
 
 class Categorias(models.Model):
     id_categoria = models.AutoField(primary_key=True, db_column='ID_Categoria')
-    nombre_categoria = models.CharField(max_length=100, db_column='Nombre_categoria')
+    nombre_categoria = models.CharField(
+        max_length=100, unique=True, db_column='Nombre_categoria'
+    )
 
     class Meta:
         db_table = 'Categorias'
@@ -18,8 +28,14 @@ class Muebles(models.Model):
     id_muebles = models.AutoField(primary_key=True, db_column='ID_muebles')
     nombre = models.CharField(max_length=200, db_column='Nombre')
     descripcion = models.TextField(blank=True, null=True, db_column='Descripcion')
-    precio = models.DecimalField(max_digits=10, decimal_places=2, db_column='Precio')
-    stock = models.IntegerField(default=0, db_column='Stock')
+    precio = models.DecimalField(
+        max_digits=10, decimal_places=2, db_column='Precio',
+        validators=[MinValueValidator(0.01, message='El precio debe ser mayor a 0.')]
+    )
+    stock = models.IntegerField(
+        default=0, db_column='Stock',
+        validators=[MinValueValidator(0, message='El stock no puede ser negativo.')]
+    )
     id_categoria = models.ForeignKey(
         Categorias, on_delete=models.CASCADE,
         db_column='ID_Categoria', related_name='muebles'
@@ -62,9 +78,14 @@ class Clientes(models.Model):
     id_cliente = models.AutoField(primary_key=True, db_column='ID_Cliente')
     nombre = models.CharField(max_length=100, db_column='Nombre')
     apellido = models.CharField(max_length=100, db_column='Apellido')
-    telefono = models.CharField(max_length=20, blank=True, null=True, db_column='Telefono')
+    telefono = models.CharField(
+        max_length=20, blank=True, null=True, db_column='Telefono',
+        validators=[phone_validator]
+    )
     dirreccion = models.CharField(max_length=255, blank=True, null=True, db_column='Dirreccion')
-    correo = models.CharField(max_length=100, blank=True, null=True, db_column='Correo')
+    correo = models.EmailField(
+        max_length=100, blank=True, null=True, db_column='Correo'
+    )
 
     class Meta:
         db_table = 'Clientes'
@@ -86,7 +107,10 @@ class Ventas(models.Model):
         Usuarios, on_delete=models.CASCADE,
         db_column='ID_Usuario', related_name='ventas'
     )
-    total = models.DecimalField(max_digits=10, decimal_places=2, default=0, db_column='Total')
+    total = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0, db_column='Total',
+        validators=[MinValueValidator(0, message='El total no puede ser negativo.')]
+    )
 
     class Meta:
         db_table = 'Ventas'
@@ -107,8 +131,14 @@ class DetallesVentas(models.Model):
         Muebles, on_delete=models.CASCADE,
         db_column='ID_Muebles', related_name='detalles_ventas'
     )
-    cantidad = models.IntegerField(db_column='Cantidad')
-    precio_unitario = models.DecimalField(max_digits=10, decimal_places=2, db_column='Precio_unitario')
+    cantidad = models.IntegerField(
+        db_column='Cantidad',
+        validators=[MinValueValidator(1, message='La cantidad debe ser al menos 1.')]
+    )
+    precio_unitario = models.DecimalField(
+        max_digits=10, decimal_places=2, db_column='Precio_unitario',
+        validators=[MinValueValidator(0.01, message='El precio unitario debe ser mayor a 0.')]
+    )
 
     class Meta:
         db_table = 'Detalles_ventas'
@@ -122,9 +152,14 @@ class DetallesVentas(models.Model):
 class Proveedor(models.Model):
     id_proveedores = models.AutoField(primary_key=True, db_column='ID_Proveedores')
     nombre = models.CharField(max_length=100, db_column='Nombre')
-    telefono = models.CharField(max_length=20, blank=True, null=True, db_column='Telefono')
+    telefono = models.CharField(
+        max_length=20, blank=True, null=True, db_column='Telefono',
+        validators=[phone_validator]
+    )
     direccion = models.CharField(max_length=255, blank=True, null=True, db_column='Direccion')
-    correo = models.CharField(max_length=100, blank=True, null=True, db_column='Correo')
+    correo = models.EmailField(
+        max_length=100, blank=True, null=True, db_column='Correo'
+    )
 
     class Meta:
         db_table = 'Proveedor'
@@ -160,7 +195,10 @@ class Materiales(models.Model):
     id_materiales = models.AutoField(primary_key=True, db_column='ID_Materiales')
     nombre = models.CharField(max_length=100, db_column='Nombre')
     tipo = models.CharField(max_length=100, blank=True, null=True, db_column='Tipo')
-    stock = models.IntegerField(default=0, db_column='Stock')
+    stock = models.IntegerField(
+        default=0, db_column='Stock',
+        validators=[MinValueValidator(0, message='El stock no puede ser negativo.')]
+    )
     unidad_medida = models.CharField(max_length=50, blank=True, null=True, db_column='Unidad_medida')
 
     class Meta:
@@ -182,8 +220,14 @@ class DetalleCompra(models.Model):
         Materiales, on_delete=models.CASCADE,
         db_column='ID_Material', related_name='detalles_compra'
     )
-    cantidad = models.IntegerField(db_column='Cantidad')
-    precio_unitario = models.DecimalField(max_digits=10, decimal_places=2, db_column='Precio_unitario')
+    cantidad = models.IntegerField(
+        db_column='Cantidad',
+        validators=[MinValueValidator(1, message='La cantidad debe ser al menos 1.')]
+    )
+    precio_unitario = models.DecimalField(
+        max_digits=10, decimal_places=2, db_column='Precio_unitario',
+        validators=[MinValueValidator(0.01, message='El precio unitario debe ser mayor a 0.')]
+    )
 
     class Meta:
         db_table = 'Detalle_Compra'

@@ -73,7 +73,11 @@
                                 <span class="currency">L. </span>{{ mueble.precio }}
                             </span>
                             {% if mueble.stock > 0 %}
-                            <a href="{% url 'agregar_al_carrito' mueble.id_muebles %}?next=/catalogo/{% if categoria_actual %}?categoria={{ categoria_actual.id_categoria }}{% endif %}" class="btn-add-cart" title="Agregar al carrito">🛒</a>
+                            <form method="post" action="{% url 'agregar_al_carrito' mueble.id_muebles %}" style="display:inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="/catalogo/{% if categoria_actual %}?categoria={{ categoria_actual.id_categoria }}{% endif %}">
+                                <button type="submit" class="btn-add-cart" title="Agregar al carrito">🛒</button>
+                            </form>
                             {% else %}
                             <span class="btn-add-cart" style="opacity: 0.3; cursor: not-allowed;">🛒</span>
                             {% endif %}
