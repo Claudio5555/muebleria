@@ -398,9 +398,9 @@ def orden_confirmada(request, venta_id):
 
 def admin_dashboard(request):
     """Vista principal del Dashboard de Ventas para el administrador"""
-    # Verificar permisos admin
+    # Verificar permisos admin (Custom Model O Django Admin Superuser)
     usuario_rol = request.session.get('usuario_rol')
-    if usuario_rol != 'admin':
+    if usuario_rol != 'admin' and not request.user.is_staff:
         messages.error(request, 'Acceso denegado. Se requieren permisos de administrador para ver el Dashboard.')
         return redirect('home')
         
@@ -454,7 +454,7 @@ def admin_dashboard(request):
 def admin_dashboard_data(request):
     """API para obtener datos de los gráficos del Dashboard"""
     usuario_rol = request.session.get('usuario_rol')
-    if usuario_rol != 'admin':
+    if usuario_rol != 'admin' and not request.user.is_staff:
         return JsonResponse({'error': 'No autorizado'}, status=403)
         
     hoy = timezone.now()
