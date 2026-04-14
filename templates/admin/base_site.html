@@ -81,10 +81,15 @@
 {% endblock %}
 
 {% block branding %}
-<h1 id="site-name">
-    <a href="{% url 'admin:index' %}">
-        <img src="{% static 'img/logo.jpg' %}" alt="Logo San José">
-        Administración de Mueblería San José
+<div style="display: flex; justify-content: space-between; align-items: center; width: 60%; flex-grow: 1;">
+    <h1 id="site-name" style="margin: 0;">
+        <a href="{% url 'admin:index' %}">
+            <img src="{% static 'img/logo.jpg' %}" alt="Logo San José">
+            Administración de San José
+        </a>
+    </h1>
+    <a href="{% url 'admin_dashboard' %}" class="button" style="background-color: rgba(255,255,255,0.2); color: white; padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.4); text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 8px; margin-left: auto;">
+        <span style="font-size: 1.2rem;">📊</span> Dashboard de Ventas
     </a>
-</h1>
+</div>
 {% endblock %}

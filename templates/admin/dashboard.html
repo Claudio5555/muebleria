@@ -1,0 +1,647 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Ventas | Mueblería San José</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            /* Theme Colors based on Admin */
+            --primary: #3E2723;
+            --primary-light: #5D4037;
+            --secondary: #4E342E;
+            --accent: #8D6E63;
+            --bg-color: #f4f0ec;
+            --text-main: #212121;
+            --text-muted: #757575;
+            --success: #388E3C;
+            --danger: #D32F2F;
+            
+            /* Glassmorphism */
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --glass-shadow: 0 8px 32px 0 rgba(141, 110, 99, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at top right, rgba(93, 64, 55, 0.05), transparent 40%),
+                              radial-gradient(circle at bottom left, rgba(141, 110, 99, 0.1), transparent 40%);
+            color: var(--text-main);
+            min-height: 100vh;
+        }
+
+        /* Navbar */
+        .navbar {
+            background: rgba(62, 39, 35, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            text-decoration: none;
+            color: white;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+
+        .navbar-brand img {
+            height: 40px;
+            border-radius: 50%;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: background 0.3s;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .nav-links a:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-links .btn-admin {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .page-header {
+            margin-bottom: 2rem;
+            animation: fadeInDown 0.5s ease-out;
+        }
+
+        .page-header h1 {
+            font-size: 1.8rem;
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        .page-header p {
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        /* Grid Layouts */
+        .grid-kpi {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .grid-charts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Glass Card Base */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: var(--glass-shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            animation: fadeInUp 0.6s ease-out backwards;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px 0 rgba(141, 110, 99, 0.2);
+        }
+
+        /* KPI Cards Specifics */
+        .kpi-title {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .kpi-icon {
+            font-size: 1.5rem;
+            background: rgba(93, 64, 55, 0.1);
+            padding: 8px;
+            border-radius: 10px;
+        }
+
+        .kpi-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .kpi-trend {
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .trend-up { color: var(--success); }
+        .trend-down { color: var(--danger); }
+        .trend-neutral { color: var(--text-muted); }
+
+        /* Chart Header */
+        .chart-header {
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            padding-bottom: 0.8rem;
+        }
+
+        .chart-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary-light);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+
+        /* Table Card */
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th, td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+        th {
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+
+        td {
+            font-size: 0.95rem;
+            vertical-align: middle;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tbody tr {
+            transition: background 0.2s;
+        }
+
+        tbody tr:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: rgba(56, 142, 60, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(56, 142, 60, 0.2);
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Staggered animation delays */
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+        .delay-3 { animation-delay: 0.3s; }
+        .delay-4 { animation-delay: 0.4s; }
+
+        @media (max-width: 768px) {
+            .grid-charts {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <a href="{% url 'admin:index' %}" class="navbar-brand">
+            <span style="font-size: 24px;">📊</span>
+            Dashboard Administrativo
+        </a>
+        <div class="nav-links">
+            <a href="{% url 'home' %}">Ir a la Tienda</a>
+            <a href="{% url 'admin:index' %}" class="btn-admin">Panel Admin</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>Resumen de Ventas</h1>
+            <p>Análisis de rendimiento y métricas clave de la Mueblería.</p>
+        </div>
+
+        <!-- KPIs -->
+        <div class="grid-kpi">
+            <!-- Ingresos -->
+            <div class="glass-card delay-1">
+                <div class="kpi-title">
+                    Ingresos Mensuales
+                    <span class="kpi-icon">💰</span>
+                </div>
+                <div class="kpi-value">L. {{ ingresos_mes|floatformat:2 }}</div>
+                <div class="kpi-trend {% if variacion_ingresos > 0 %}trend-up{% elif variacion_ingresos < 0 %}trend-down{% else %}trend-neutral{% endif %}">
+                    {% if variacion_ingresos > 0 %}📈 +{{ variacion_ingresos|floatformat:1 }}% vs anterior
+                    {% elif variacion_ingresos < 0 %}📉 {{ variacion_ingresos|floatformat:1 }}% vs anterior
+                    {% else %}➖ Sin variación
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Ventas Totales -->
+            <div class="glass-card delay-2">
+                <div class="kpi-title">
+                    Órdenes (Mes)
+                    <span class="kpi-icon">📝</span>
+                </div>
+                <div class="kpi-value">{{ total_ventas_mes }}</div>
+                <div class="kpi-trend trend-neutral">
+                    Órdenes procesadas
+                </div>
+            </div>
+
+            <!-- Ticket Promedio -->
+            <div class="glass-card delay-3">
+                <div class="kpi-title">
+                    Ticket Promedio
+                    <span class="kpi-icon">🏷️</span>
+                </div>
+                <div class="kpi-value">L. {{ ticket_promedio|floatformat:2 }}</div>
+                <div class="kpi-trend trend-neutral">
+                    Promedio por orden
+                </div>
+            </div>
+
+            <!-- Productos Vendidos -->
+            <div class="glass-card delay-4">
+                <div class="kpi-title">
+                    Muebles Vendidos
+                    <span class="kpi-icon">🪑</span>
+                </div>
+                <div class="kpi-value">{{ productos_vendidos }}</div>
+                <div class="kpi-trend trend-neutral">
+                    Unidades entregadas
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Grid 1 -->
+        <div class="grid-charts">
+            <!-- Ventas por Día (Linea) -->
+            <div class="glass-card delay-3">
+                <div class="chart-header">
+                    <span class="chart-title">Ventas Diarias (Últimos 30 días)</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="chartVentasDia"></canvas>
+                </div>
+            </div>
+
+            <!-- Ingresos por Mes (Barras) -->
+            <div class="glass-card delay-4">
+                <div class="chart-header">
+                    <span class="chart-title">Ingresos Mensuales</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="chartIngresosMes"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Grid 2 -->
+        <div class="grid-charts">
+            <!-- Top Productos (Barras Horizontales) -->
+            <div class="glass-card delay-1">
+                <div class="chart-header">
+                    <span class="chart-title">Top 5 Muebles Más Vendidos</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="chartTopProductos"></canvas>
+                </div>
+            </div>
+
+            <!-- Por Categoría (Dona) -->
+            <div class="glass-card delay-2">
+                <div class="chart-header">
+                    <span class="chart-title">Distribución por Categoría</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="chartCategorias"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Sales Table -->
+        <div class="glass-card delay-3">
+            <div class="chart-header">
+                <span class="chart-title">Ventas Recientes</span>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID Venta</th>
+                            <th>Cliente</th>
+                            <th>Usuario/Vendedor</th>
+                            <th>Fecha</th>
+                            <th>Total</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for venta in ventas_recientes %}
+                        <tr>
+                            <td>#{{ venta.id_venta }}</td>
+                            <td>{{ venta.id_cliente.nombre }} {{ venta.id_cliente.apellido }}</td>
+                            <td>{{ venta.id_usuario.usuario }}</td>
+                            <td>{{ venta.fecha|date:"d M Y, h:i A" }}</td>
+                            <td style="font-weight: 600;">L. {{ venta.total }}</td>
+                            <td><span class="status-badge">Completada</span></td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: var(--text-muted);">No hay ventas recientes</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Chart.js Configuration -->
+    <script>
+        // Configuración de Theme
+        const chartColors = {
+            primary: '#5D4037',     // Marrón principal
+            primaryLight: 'rgba(93, 64, 55, 0.2)',
+            secondary: '#8D6E63',   // Marrón acento
+            tertiary: '#A1887F',
+            quaternary: '#BCAAA4',
+            quinary: '#D7CCC8',
+            grid: 'rgba(0, 0, 0, 0.05)',
+            text: '#757575'
+        };
+
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        Chart.defaults.color = chartColors.text;
+
+        // Fetch Data from API
+        fetch('/admin-dashboard/data/')
+            .then(response => response.json())
+            .then(data => {
+                initCharts(data);
+            })
+            .catch(error => console.error('Error loading dashboard data:', error));
+
+        function initCharts(data) {
+            
+            // 1. Chart Ventas por Día (Línea)
+            const ctxDia = document.getElementById('chartVentasDia').getContext('2d');
+            
+            // Gradiente para el área
+            let gradientDia = ctxDia.createLinearGradient(0, 0, 0, 300);
+            gradientDia.addColorStop(0, chartColors.primaryLight);
+            gradientDia.addColorStop(1, 'rgba(255,255,255,0)');
+
+            new Chart(ctxDia, {
+                type: 'line',
+                data: {
+                    labels: data.ventas_dia.labels,
+                    datasets: [{
+                        label: 'Ventas Diarias (L.)',
+                        data: data.ventas_dia.data,
+                        borderColor: chartColors.primary,
+                        backgroundColor: gradientDia,
+                        borderWidth: 3,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: chartColors.primary,
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        fill: true,
+                        tension: 0.4 // Curvas suaves
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(62, 39, 35, 0.9)',
+                            padding: 12,
+                            titleFont: { size: 13 },
+                            bodyFont: { size: 14, weight: 'bold' },
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Total: L. ' + context.parsed.y.toFixed(2);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: chartColors.grid, drawBorder: false },
+                            ticks: { callback: value => 'L.' + value }
+                        },
+                        x: {
+                            grid: { display: false, drawBorder: false },
+                            ticks: { maxTicksLimit: 10 }
+                        }
+                    }
+                }
+            });
+
+            // 2. Chart Ingresos Mensuales (Barras)
+            const ctxMes = document.getElementById('chartIngresosMes').getContext('2d');
+            new Chart(ctxMes, {
+                type: 'bar',
+                data: {
+                    labels: data.ingresos_mes.labels,
+                    datasets: [{
+                        data: data.ingresos_mes.data,
+                        backgroundColor: chartColors.primary,
+                        borderRadius: 6,
+                        barPercentage: 0.6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(62, 39, 35, 0.9)',
+                            padding: 12,
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Ingresos: L. ' + context.parsed.y.toFixed(2);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: chartColors.grid, drawBorder: false },
+                            ticks: { callback: value => 'L.' + value }
+                        },
+                        x: {
+                            grid: { display: false, drawBorder: false }
+                        }
+                    }
+                }
+            });
+
+            // 3. Chart Top Productos (Barras Horizontales)
+            const ctxTop = document.getElementById('chartTopProductos').getContext('2d');
+            new Chart(ctxTop, {
+                type: 'bar',
+                data: {
+                    labels: data.top_productos.labels,
+                    datasets: [{
+                        data: data.top_productos.data,
+                        backgroundColor: chartColors.secondary,
+                        borderRadius: 6,
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', // Convertir a barras horizontales
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            grid: { color: chartColors.grid, drawBorder: false },
+                            ticks: { stepSize: 1 } // Cantidades enteras (muebles)
+                        },
+                        y: {
+                            grid: { display: false, drawBorder: false }
+                        }
+                    }
+                }
+            });
+
+            // 4. Chart Categorías (Dona)
+            const ctxCat = document.getElementById('chartCategorias').getContext('2d');
+            new Chart(ctxCat, {
+                type: 'doughnut',
+                data: {
+                    labels: data.ventas_categoria.labels,
+                    datasets: [{
+                        data: data.ventas_categoria.data,
+                        backgroundColor: [
+                            chartColors.primary,
+                            chartColors.secondary,
+                            chartColors.tertiary,
+                            chartColors.quaternary,
+                            chartColors.quinary,
+                            '#EFEBE9'
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

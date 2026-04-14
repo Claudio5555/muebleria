@@ -15,4 +15,7 @@ urlpatterns = [
     path('carrito/eliminar/<int:mueble_id>/', views.eliminar_del_carrito, name='eliminar_del_carrito'),
     path('checkout/', views.checkout, name='checkout'),
     path('orden/<int:venta_id>/', views.orden_confirmada, name='orden_confirmada'),
+    # Dashboard Admin
+    path('admin-dashboard/', views.admin_dashboard, name='admin_dashboard'),
+    path('admin-dashboard/data/', views.admin_dashboard_data, name='admin_dashboard_data'),
 ]

@@ -5,10 +5,13 @@ from django.http import JsonResponse, HttpResponseNotAllowed
 from django.views.decorators.http import require_POST, require_http_methods
 from django.db import transaction
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils import timezone
+from django.db.models import Sum, Count, F
+from django.db.models.functions import TruncDate
+from datetime import timedelta
 from decimal import Decimal
 from .models import Muebles, Categorias, Usuarios, Clientes, Ventas, DetallesVentas
 from .forms import RegistroForm, LoginForm
-
 
 def home(request):
     """Página principal"""
@@ -389,3 +392,125 @@ def orden_confirmada(request, venta_id):
         'detalles': detalles,
     }
     return render(request, 'orden_confirmada.html', context)
+
+
+# ========== DASHBOARD ADMIN ==========
+
+def admin_dashboard(request):
+    """Vista principal del Dashboard de Ventas para el administrador"""
+    # Verificar permisos admin
+    usuario_rol = request.session.get('usuario_rol')
+    if usuario_rol != 'admin':
+        messages.error(request, 'Acceso denegado. Se requieren permisos de administrador para ver el Dashboard.')
+        return redirect('home')
+        
+    hoy = timezone.now()
+    inicio_mes = hoy.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    
+    # Ventas del mes actual
+    ventas_mes = Ventas.objects.filter(fecha__gte=inicio_mes)
+    
+    # 1. Total Ventas Mes (Cantidad de ordenes)
+    total_ventas_mes = ventas_mes.count()
+    
+    # 2. Ingresos Mes
+    ingresos_mes = ventas_mes.aggregate(total=Sum('total'))['total'] or Decimal('0.00')
+    
+    # 3. Ticket Promedio (mes)
+    ticket_promedio = (ingresos_mes / total_ventas_mes) if total_ventas_mes > 0 else Decimal('0.00')
+    
+    # 4. Productos Vendidos (mes)
+    productos_vendidos = DetallesVentas.objects.filter(id_ventas__in=ventas_mes).aggregate(total=Sum('cantidad'))['total'] or 0
+    
+    # Variación vs 30 días previos
+    hace_30_dias = hoy - timedelta(days=30)
+    hace_60_dias = hoy - timedelta(days=60)
+    
+    ventas_ultimos_30 = Ventas.objects.filter(fecha__gte=hace_30_dias)
+    ingresos_30 = ventas_ultimos_30.aggregate(total=Sum('total'))['total'] or Decimal('0.00')
+    
+    ventas_previos_30 = Ventas.objects.filter(fecha__gte=hace_60_dias, fecha__lt=hace_30_dias)
+    ingresos_previos = ventas_previos_30.aggregate(total=Sum('total'))['total'] or Decimal('0.00')
+    
+    if ingresos_previos > 0:
+        variacion_ingresos = ((ingresos_30 - ingresos_previos) / ingresos_previos) * 100
+    else:
+        variacion_ingresos = 100 if ingresos_30 > 0 else 0
+        
+    # Ventas recientes (Tabla, top 10)
+    ventas_recientes = Ventas.objects.select_related('id_cliente', 'id_usuario').order_by('-fecha')[:10]
+    
+    context = {
+        'total_ventas_mes': total_ventas_mes,
+        'ingresos_mes': ingresos_mes,
+        'ticket_promedio': ticket_promedio,
+        'productos_vendidos': productos_vendidos,
+        'variacion_ingresos': variacion_ingresos,
+        'ventas_recientes': ventas_recientes,
+    }
+    return render(request, 'admin/dashboard.html', context)
+
+
+def admin_dashboard_data(request):
+    """API para obtener datos de los gráficos del Dashboard"""
+    usuario_rol = request.session.get('usuario_rol')
+    if usuario_rol != 'admin':
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+        
+    hoy = timezone.now()
+    hace_30_dias = hoy - timedelta(days=30)
+    
+    # 1. Ventas por Día (Últimos 30 días)
+    ventas_por_dia = list(Ventas.objects.filter(fecha__gte=hace_30_dias)
+        .annotate(dia=TruncDate('fecha'))
+        .values('dia')
+        .annotate(total=Sum('total'))
+        .order_by('dia'))
+        
+    # 2. Ventas por Categoría (Dona)
+    categorias_ventas = list(DetallesVentas.objects
+        .values(nombre_cat=F('id_muebles__id_categoria__nombre_categoria'))
+        .annotate(total_cantidad=Sum('cantidad'))
+        .order_by('-total_cantidad'))
+        
+    # 3. Top 5 Productos (Barras Horizontales)
+    top_productos = list(DetallesVentas.objects
+        .values(nombre_mueble=F('id_muebles__nombre'))
+        .annotate(total_vendido=Sum('cantidad'))
+        .order_by('-total_vendido')[:5])
+        
+    # 4. Ingresos por Mes (Últimos 6 meses)
+    ingresos_por_mes = {}
+    for i in range(5, -1, -1):
+        # Buscar el mes y el año de hace i meses (approx 30 dias por mes)
+        mes_target = hoy - timedelta(days=30*i)
+        mes_nombre = f"{mes_target.strftime('%b %Y')}"
+        
+        # Filtro aproximado
+        ventas_mes_i = Ventas.objects.filter(
+            fecha__year=mes_target.year, 
+            fecha__month=mes_target.month
+        )
+        total_mes = ventas_mes_i.aggregate(t=Sum('total'))['t'] or 0
+        ingresos_por_mes[mes_nombre] = float(total_mes)
+
+    data = {
+        'ventas_dia': {
+            'labels': [str(v['dia']) for v in ventas_por_dia],
+            'data': [float(v['total']) for v in ventas_por_dia],
+        },
+        'ventas_categoria': {
+            'labels': [c['nombre_cat'] for c in categorias_ventas],
+            'data': [c['total_cantidad'] for c in categorias_ventas],
+        },
+        'top_productos': {
+            'labels': [str(p['nombre_mueble'])[:20] + '...' if len(p['nombre_mueble']) > 20 else p['nombre_mueble'] for p in top_productos],
+            'data': [p['total_vendido'] for p in top_productos],
+        },
+        'ingresos_mes': {
+            'labels': list(ingresos_por_mes.keys()),
+            'data': list(ingresos_por_mes.values()),
+        }
+    }
+    
+    return JsonResponse(data)
